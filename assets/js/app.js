@@ -6,7 +6,8 @@ var margin = { top: 30, right: 40, bottom: 100, left: 100 };
 var width = svgWidth - margin.left - margin.right;
 var height = svgHeight - margin.top - margin.bottom;
 
-// Create an SVG wrapper, append an SVG group that will hold our chart, and shift the latter by left and top margins.
+// Create an SVG wrapper, append an SVG group that will hold the chart, 
+
 var svg = d3
   .select(".chart")
   .append("svg")
@@ -21,9 +22,6 @@ var chart = svg.append("g");
 var div = d3.select(".chart").append("div").attr("class", "tooltip").style("opacity", 0);
 
 // Retrieve data from CSV file and execute everything below
-
-// D3.json("/gunDataFinal", function(error, gunData){
-//     if (error) return console.warn(error);
 
 d3.csv("assets/data/data.csv", function(err, censusData) {
     if(err) throw err;
@@ -154,7 +152,4 @@ d3.csv("assets/data/data.csv", function(err, censusData) {
         )
         .attr("class", "axis-text")
         .text("In Poverty (%)");
-
-
-
 });
