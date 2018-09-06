@@ -9,27 +9,35 @@ var height = svgHeight - margin.top - margin.bottom;
 // Create an SVG wrapper, append an SVG group that will hold the chart, 
 
 var svg = d3
-  .select(".chart")
+  .select("#scatter")
   .append("svg")
   .attr("width", svgWidth)
   .attr("height", svgHeight)
-  .append("g")
-  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+//   .append("g")
+//   .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 var chart = svg.append("g");
 
 // Append a div to the body to create tooltips, assign it a class
-var div = d3.select(".chart").append("div").attr("class", "tooltip").style("opacity", 0);
+var div = d3.select(".scatter").append("div").attr("class", "tooltip").style("opacity", 0);
 
 // Retrieve data from CSV file and execute everything below
+console.log("get data...")
 
-d3.csv("assets/data/data.csv", function(err, censusData) {
-    if(err) throw err;
+d3.csv("/assets/data/data.csv").then(successHandle, errorHandle)
+
+function errorHandle(error){
+    if(error) throw error;
+}
+
+function successHandle(censusData) {
+    // console.log(JSON.stringify(censusData))
+
     censusData.forEach(function(data) {
       data.state = data.state;
       data.abbr = data.abbr;
-      data.percBelowPov = +data.percBelowPov;
-      data.physActive = +data.physActive;
+      data.poverty = +data.poverty;
+      data.healthcare = +data.healthcare;
     });
 
     // Create scale functions
@@ -47,61 +55,85 @@ d3.csv("assets/data/data.csv", function(err, censusData) {
     var yMin;
     var yMax;
 
-    xMin = d3.min(censusData, function(data) {
-        return +data.percBelowPov * 0.85;
-    });
+    xMin = d3.min(censusData.map(function(data) {
+        return +data.poverty * 0.85;
+    }));
 
-    xMax = d3.max(censusData, function(data) {
-        return +data.percBelowPov * 1;
-    });
+    xMax = d3.max(censusData.map(function(data) {
+        return +data.poverty * 1;
+    }));
 
-    yMin = d3.min(censusData, function(data) {
-        return +data.physActive * 0.85;
-    });
+    yMin = d3.min(censusData.map(function(data) {
+        return +data.healthcare * 0.85;
+    }));
 
-    yMax = d3.max(censusData, function(data) {
-        return +data.physActive * 1;
-    });
+    yMax = d3.max(censusData.map(function(data) {
+        return +data.healthcare* 1;
+    }));
 
     xLinearScale.domain([xMin, xMax]);
     yLinearScale.domain([yMin, yMax]);
-    console.log(xMin);
-    console.log(yMax);
+    console.log(xLinearScale(xMax));
+    console.log(yLinearScale(yMin));
 
     var state_text = "State: "
     var pov_perc = "In Poverty(%): "
-    var active_perc = "Physically Active(%): "
+    var healthcare_perc = "Healthcare(%): "
     
     // create chart
-    chart.selectAll("circle")
+    var circlesGroup = svg.selectAll("g circle")
         .data(censusData)
         .enter()
         .append("circle")
         .attr("cx", function(data, index) {
-            return xLinearScale(data.percBelowPov);
+            return xLinearScale(data.poverty);
         })
         .attr("cy", function(data, index) {
-            return yLinearScale(data.physActive);
+            return yLinearScale(data.healthcare);
         })
         .attr("r", 12)
         .attr("fill", "#0066cc")
         // display tooltip on click
-        .on("mouseover", function (data) {
-            div.transition()
-                .duration(100)
-                .style("opacity", .9);
-            div.html(state_text.bold() + data.state + "<br/>" + pov_perc.bold() + data.percBelowPov + "<text>%</text>" + "<br/>" + active_perc.bold() + data.physActive + "<text>%</text>")
-                .style("left", (d3.event.pageX)+ 10 + "px")
-                .style("top", (d3.event.pageY - 0) + "px");
+        // .on("mouseover", function (data) {
+        //     div.transition()
+        //         .duration(100)
+        //         .style("opacity", .9);
+        //     div.html(state_text.bold() + data.state + "<br/>" + pov_perc.bold() + data.poverty + "<text>%</text>" + "<br/>" + healthcare_perc.bold() + data.healthcare + "<text>%</text>")
+        //         .style("left", (d3.event.pageX)+ 10 + "px")
+        //         .style("top", (d3.event.pageY - 0) + "px");
+        // })
+        // // hide tooltip on mouseout
+        // .on("mouseout", function(data, index) {
+        //     div.transition()
+        //         .duration(500)
+        //         .style("opacity",0);
+        // });
+
+    //     // display tooltip on click
+    var toolTip = d3.tip()
+        .attr("class", "tooltip")
+        .offset([80,-60])
+        .html(function(d){
+            return ("test")
+        })
+    
+    circlesGroup.call(toolTip)
+
+    circlesGroup.on("mouseover", function (data) {
+            toolTip.show(data.healthcare)
+            // div.transition()
+            //     .duration(100)
+            //     .style("opacity", .9);
+            // div.html(state_text.bold() + data.state + "<br/>" + pov_perc.bold() + data.poverty + "<text>%</text>" + "<br/>" + healthcare_perc.bold() + data.healthcare + "<text>%</text>")
+            //     .style("left", (d3.event.pageX)+ 10 + "px")
+            //     .style("top", (d3.event.pageY - 0) + "px");
         })
         // hide tooltip on mouseout
         .on("mouseout", function(data, index) {
-            div.transition()
-                .duration(500)
-                .style("opacity",0);
+            toolTip.hide(data.healthcare)
         });
 
-    chart.append("text")
+    svg.append("text")
         .style("text-anchor", "middle")
         .style("font-size", "10px")
         .style("font-weight", "bold")
@@ -111,24 +143,24 @@ d3.csv("assets/data/data.csv", function(err, censusData) {
         .enter()
         .append("tspan")
             .attr("x", function(data) {
-                return xLinearScale(data.percBelowPov - 0);
+                return xLinearScale(data.poverty - 0);
             })
             .attr("y", function(data) {
-                return yLinearScale(data.physActive - 0.1);
+                return yLinearScale(data.healthcare - 0.1);
             })
             .text(function(data) {
                 return data.abbr
                 });
 
     // Append an SVG group for the xaxis, then display x-axis 
-    chart
+    svg
         .append("g")
         .attr("transform", `translate(0, ${height})`)
         .call(bottomAxis);
 
-    chart.append("g").call(leftAxis);
+    svg.append("g").call(leftAxis);
 
-    chart
+    svg
         .append("text")
         .style("font-family", "arial")
         .style("text-anchor", "middle")
@@ -138,10 +170,10 @@ d3.csv("assets/data/data.csv", function(err, censusData) {
         .attr("x", 0 - height/2)
         .attr("dy","1em")
         .attr("class", "axis-text")
-        .text("Physically Active (%)");
+        .text("Lacks Healthcare (%)");
   
     // Append x-axis labels
-    chart
+    svg
         .append("text")
         .style("font-family", "arial")
         .style("text-anchor", "middle")
@@ -152,4 +184,4 @@ d3.csv("assets/data/data.csv", function(err, censusData) {
         )
         .attr("class", "axis-text")
         .text("In Poverty (%)");
-});
+}
