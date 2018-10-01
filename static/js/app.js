@@ -24,7 +24,7 @@ var div = d3.select(".scatter").append("div").attr("class", "tooltip").style("op
 // Retrieve data from CSV file and execute everything below
 console.log("get data...")
 
-d3.csv("/assets/data/data.csv").then(successHandle, errorHandle)
+d3.csv("/static/data/data.csv").then(successHandle, errorHandle)
 
 function errorHandle(error){
     if(error) throw error;
